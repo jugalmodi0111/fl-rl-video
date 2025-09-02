@@ -1,0 +1,29 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.class
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb~
+
+# Environments
+.venv/
+.env
+
+# Data & weights
+data/
+weights/
+*.npy
+*.pickle
+*.h5
+*.keras
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Docker
+*.tar
