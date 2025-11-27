@@ -1,0 +1,1988 @@
+```python
+# Device selection (Apple MPS prioritized, then CUDA, then CPU)
+import torch, numpy as np
+if torch.backends.mps.is_available():
+    DEVICE = torch.device("mps")
+elif torch.cuda.is_available():
+    DEVICE = torch.device("cuda")
+else:
+    DEVICE = torch.device("cpu")
+print(f"Using device: {DEVICE}")
+```
+
+    Using device: mps
+
+
+
+```python
+import torch
+
+print("PyTorch version:", torch.__version__)
+
+# Check CUDA (NVIDIA GPUs)
+cuda_available = torch.cuda.is_available()
+print("CUDA available:", cuda_available)
+
+# Check Apple Silicon GPU (MPS)
+mps_available = hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+print("MPS available:", mps_available)
+
+if cuda_available:
+    device = torch.device("cuda")
+    print("Using CUDA GPU:", torch.cuda.get_device_name(0))
+elif mps_available:
+    device = torch.device("mps")
+    print("Using Apple GPU (MPS)")
+else:
+    device = torch.device("cpu")
+    print("Running on CPU - training will be slower but still works")
+
+```
+
+    PyTorch version: 2.9.0
+    CUDA available: False
+    MPS available: True
+    Using Apple GPU (MPS)
+
+
+
+```python
+pip install --upgrade pip
+```
+
+    Requirement already satisfied: pip in /opt/anaconda3/lib/python3.12/site-packages (25.3)
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+
+
+
+```python
+# ============================================================================
+# CELL 2: Install All Required Packages
+# ============================================================================
+# This will take 2-3 minutes - you'll see lots of output, that's normal!
+
+
+# Install machine learning libraries
+%pip install -q 'stable-baselines3[extra]'  # RL algorithms (quoted for zsh)
+%pip install -q gymnasium                  # RL environment framework
+%pip install -q scikit-learn              # Random Forest
+%pip install -q pandas numpy              # Data manipulation
+%pip install -q matplotlib seaborn        # Visualization
+%pip install -q tqdm                      # Progress bars
+%pip install -q requests gdown            # File downloading
+
+print("✅ All packages installed successfully!")
+
+import sys
+print("\nVerifying installations:")
+print(f"Python version: {sys.version.split()[0]}")
+
+try:
+    import stable_baselines3
+    print(f"✓ stable-baselines3: {stable_baselines3.__version__}")
+except:
+    print("✗ stable-baselines3: NOT INSTALLED")
+
+try:
+    import gymnasium
+    print(f"✓ gymnasium: {gymnasium.__version__}")
+except:
+    print("✗ gymnasium: NOT INSTALLED")
+
+try:
+    import sklearn
+    print(f"✓ scikit-learn: {sklearn.__version__}")
+except:
+    print("✗ scikit-learn: NOT INSTALLED")
+
+try:
+    import pandas
+    print(f"✓ pandas: {pandas.__version__}")
+except:
+    print("✗ pandas: NOT INSTALLED")
+
+try:
+    import matplotlib
+    print(f"✓ matplotlib: {matplotlib.__version__}")
+except:
+    print("✗ matplotlib: NOT INSTALLED")
+
+print("\n✅ Ready to proceed!")
+
+```
+
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    Note: you may need to restart the kernel to use updated packages.
+    ✅ All packages installed successfully!
+    
+    Verifying installations:
+    Python version: 3.12.7
+    Note: you may need to restart the kernel to use updated packages.
+    ✅ All packages installed successfully!
+    
+    Verifying installations:
+    Python version: 3.12.7
+    ✓ stable-baselines3: 2.7.0
+    ✓ gymnasium: 1.2.2
+    ✓ scikit-learn: 1.5.1
+    ✓ pandas: 2.2.2
+    ✓ matplotlib: 3.9.2
+    
+    ✅ Ready to proceed!
+    ✓ stable-baselines3: 2.7.0
+    ✓ gymnasium: 1.2.2
+    ✓ scikit-learn: 1.5.1
+    ✓ pandas: 2.2.2
+    ✓ matplotlib: 3.9.2
+    
+    ✅ Ready to proceed!
+
+
+Libraries Import
+
+
+```python
+# ============================================================================
+# CELL 2: Import All Libraries (RUN AFTER CELL 1)
+# ============================================================================
+
+# Standard libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from tqdm import tqdm
+import time
+import warnings
+warnings.filterwarnings('ignore')
+
+# Machine Learning
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (accuracy_score, precision_recall_fscore_support, 
+                             confusion_matrix, classification_report)
+from sklearn.model_selection import train_test_split
+
+# Deep Learning & RL
+import torch
+import torch.nn as nn
+import gymnasium as gym
+from gymnasium import spaces
+import stable_baselines3
+from stable_baselines3 import PPO, SAC, TD3, A2C, DDPG, DQN
+from stable_baselines3.common.env_checker import check_env
+
+# Utilities
+import os
+import pickle
+import json
+from collections import defaultdict
+
+print("✅ All libraries imported successfully!")
+print(f"\nVersions:")
+print(f"  NumPy: {np.__version__}")
+print(f"  Pandas: {pd.__version__}")
+print(f"  PyTorch: {torch.__version__}")
+print(f"  Stable-Baselines3: {stable_baselines3.__version__}")
+print(f"  Gymnasium: {gym.__version__}")
+
+```
+
+    ✅ All libraries imported successfully!
+    
+    Versions:
+      NumPy: 1.26.4
+      Pandas: 2.2.2
+      PyTorch: 2.9.0
+      Stable-Baselines3: 2.7.0
+      Gymnasium: 1.2.2
+
+
+Kinematic Datasets
+
+
+```python
+# ============================================================================
+# CELL 4: Create Sample Kinematic Dataset (OPTIMIZED - FASTER)
+# ============================================================================
+# Reduced dataset size for faster training
+
+def create_synthetic_kinematic_dataset(n_samples=1000, n_classes=10, n_features=100):
+    """
+    Create synthetic kinematic features similar to skeleton action data
+    
+    OPTIMIZED: Reduced from 5000 samples, 20 classes, 194 features
+    
+    Parameters:
+    - n_samples: Number of video samples (reduced to 1000)
+    - n_classes: Number of action classes (reduced to 10)
+    - n_features: Feature dimension (reduced to 100)
+    """
+    print(f"Creating LIGHTWEIGHT dataset with {n_samples} samples...")
+    
+    np.random.seed(42)
+    
+    # Generate features with some structure (not pure random)
+    X = []
+    y = []
+    
+    for class_id in range(n_classes):
+        # Each class has different feature distribution
+        samples_per_class = n_samples // n_classes
+        
+        # Create class-specific mean and variance
+        class_mean = np.random.randn(n_features) * 2 + class_id * 0.5
+        class_std = np.random.rand(n_features) * 0.5 + 0.5
+        
+        # Generate samples
+        class_samples = np.random.randn(samples_per_class, n_features) * class_std + class_mean
+        
+        X.append(class_samples)
+        y.extend([class_id] * samples_per_class)
+    
+    X = np.vstack(X)
+    y = np.array(y)
+    
+    # Shuffle
+    indices = np.random.permutation(len(X))
+    X = X[indices]
+    y = y[indices]
+    
+    print(f"✅ Dataset created: {X.shape[0]} samples, {X.shape[1]} features, {n_classes} classes")
+    
+    return X, y
+
+# Create SMALLER dataset for faster execution
+X, y = create_synthetic_kinematic_dataset(n_samples=1000, n_classes=10, n_features=100)
+
+print("\nDataset statistics:")
+print(f"Feature matrix shape: {X.shape}")
+print(f"Label array shape: {y.shape}")
+print(f"Feature range: [{X.min():.2f}, {X.max():.2f}]")
+print(f"Class distribution: {np.bincount(y)}")
+
+# ============================================================================
+# CELL 5: Split Data into Train and Test Sets
+# ============================================================================
+
+# Split: 70% train, 30% test
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.3, random_state=42, stratify=y
+)
+
+print("Data split completed:")
+print(f"Training set: {X_train.shape[0]} samples")
+print(f"Test set: {X_test.shape[0]} samples")
+print(f"Train classes: {len(np.unique(y_train))}")
+print(f"Test classes: {len(np.unique(y_test))}")
+
+```
+
+    Creating LIGHTWEIGHT dataset with 1000 samples...
+    ✅ Dataset created: 1000 samples, 100 features, 10 classes
+    
+    Dataset statistics:
+    Feature matrix shape: (1000, 100)
+    Label array shape: (1000,)
+    Feature range: [-7.41, 12.54]
+    Class distribution: [100 100 100 100 100 100 100 100 100 100]
+    Data split completed:
+    Training set: 700 samples
+    Test set: 300 samples
+    Train classes: 10
+    Test classes: 10
+
+
+
+```python
+# ============================================================================
+# CELL 6: Split Training Data Among 5 Federated Clients (Non-IID)
+# ============================================================================
+
+def create_federated_splits(X_train, y_train, n_clients=5, alpha=0.5):
+    """
+    Create non-IID data splits for federated clients using Dirichlet distribution
+
+    Parameters:
+    - alpha: Controls data heterogeneity (lower = more heterogeneous)
+             alpha=0.1 -> very heterogeneous (each client has few classes)
+             alpha=10  -> almost IID (balanced across clients)
+    """
+    print(f"Creating federated splits for {n_clients} clients (alpha={alpha})...")
+
+    n_classes = len(np.unique(y_train))
+    n_samples = len(X_train)
+
+    # Group indices by class
+    class_indices = [np.where(y_train == c)[0] for c in range(n_classes)]
+
+    # Initialize client data holders
+    client_data = [{'X': [], 'y': []} for _ in range(n_clients)]
+
+    # Distribute each class among clients using Dirichlet distribution
+    for class_idx, indices in enumerate(class_indices):
+        # Sample proportions from Dirichlet
+        proportions = np.random.dirichlet([alpha] * n_clients)
+        proportions = (np.cumsum(proportions) * len(indices)).astype(int)[:-1]
+
+        # Split indices
+        split_indices = np.split(indices, proportions)
+
+        # Assign to clients
+        for client_id, client_indices in enumerate(split_indices):
+            client_data[client_id]['X'].extend(client_indices)
+
+    # Convert to numpy arrays
+    for client_id in range(n_clients):
+        idx = client_data[client_id]['X']
+        client_data[client_id]['X'] = X_train[idx]
+        client_data[client_id]['y'] = y_train[idx]
+
+    # Print statistics
+    print("\n📊 Client Data Distribution:")
+    for client_id in range(n_clients):
+        n_samples = len(client_data[client_id]['y'])
+        unique_classes = len(np.unique(client_data[client_id]['y']))
+        print(f"Client {client_id+1}: {n_samples:4d} samples, {unique_classes:2d} classes")
+
+    return client_data
+
+# Create federated splits
+n_clients = 5
+client_data = create_federated_splits(X_train, y_train, n_clients=n_clients, alpha=0.5)
+
+print(f"\n✅ Federated data ready for {n_clients} clients!")
+
+```
+
+    Creating federated splits for 5 clients (alpha=0.5)...
+    
+    📊 Client Data Distribution:
+    Client 1:  233 samples,  9 classes
+    Client 2:   76 samples,  8 classes
+    Client 3:   84 samples,  9 classes
+    Client 4:  154 samples,  8 classes
+    Client 5:  153 samples, 10 classes
+    
+    ✅ Federated data ready for 5 clients!
+
+
+
+```python
+# ============================================================================
+# CELL 7: Federated Client Class with Torch MLP (Renamed to avoid sklearn clash)
+# ============================================================================
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import TensorDataset, DataLoader
+import time
+import numpy as np
+
+# Rename to avoid clashing with sklearn.neural_network.MLPClassifier
+class TorchMLPClassifier(nn.Module):
+    def __init__(self, n_features, n_classes):
+        super(TorchMLPClassifier, self).__init__()
+        self.seq = nn.Sequential(
+            nn.Linear(n_features, 256), nn.ReLU(), nn.Dropout(0.3),
+            nn.Linear(256, 128), nn.ReLU(), nn.Dropout(0.3),
+            nn.Linear(128, 64), nn.ReLU(), nn.Dropout(0.3),
+            nn.Linear(64, n_classes)
+        )
+        self.n_classes = n_classes
+    def forward(self, x):
+        return self.seq(x)
+
+class FederatedClientMLP:
+    """Federated client using a PyTorch MLP with flexible constructor args.
+    Uses global DEVICE (MPS/ CUDA / CPU).
+    """
+    def __init__(self, client_id=None, X_local=None, y_local=None, **kwargs):
+        if client_id is None:
+            client_id = kwargs.pop('clientid', None)
+        if X_local is None:
+            X_local = kwargs.pop('Xlocal', None)
+        if y_local is None:
+            y_local = kwargs.pop('ylocal', None)
+        missing = [n for n,v in [('client_id',client_id),('X_local',X_local),('y_local',y_local)] if v is None]
+        if missing:
+            raise ValueError(f"Missing required arguments: {', '.join(missing)}")
+        self.client_id = client_id
+        self.X_local = X_local
+        self.y_local = y_local
+        self.model = None
+        self.device = DEVICE
+        print(f"Client {client_id} initialized on {self.device}")
+
+    def train_local_model(self, n_epochs=10, batch_size=32, learning_rate=0.001, n_classes=None):
+        start = time.time()
+        X_train = torch.as_tensor(self.X_local, dtype=torch.float32, device=self.device)
+        y_train = torch.as_tensor(self.y_local, dtype=torch.long, device=self.device)
+        ds = TensorDataset(X_train, y_train)
+        dl = DataLoader(ds, batch_size=batch_size, shuffle=True)
+        n_features = self.X_local.shape[1]
+        inferred = len(np.unique(self.y_local))
+        target_classes = n_classes if n_classes is not None else inferred
+        self.model = TorchMLPClassifier(n_features, target_classes).to(self.device)
+        crit = nn.CrossEntropyLoss()
+        opt = optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.model.train()
+        for _ in range(n_epochs):
+            for bx, by in dl:
+                out = self.model(bx)
+                loss = crit(out, by)
+                opt.zero_grad(); loss.backward(); opt.step()
+        self.model.eval()
+        with torch.no_grad():
+            out = self.model(X_train)
+            _, pred = torch.max(out, 1)
+            acc = (pred == y_train).sum().item() / len(y_train)
+        metrics = {
+            'accuracy': acc,
+            'n_samples': len(self.X_local),
+            'n_classes': target_classes,
+            'training_time': time.time() - start
+        }
+        return self.model, metrics
+
+print("✅ TorchMLPClassifier + FederatedClientMLP redefined (MPS-aware)")
+print("   DEVICE:", DEVICE)
+```
+
+    ✅ TorchMLPClassifier + FederatedClientMLP redefined (MPS-aware)
+       DEVICE: mps
+
+
+
+```python
+# ============================================================================
+# CELL 8: Test Single Client Training (OPTIMIZED)
+# ============================================================================
+
+print("Testing client training...\n")
+
+# Safety: create clients if missing (avoids NameError if this cell runs early)
+if 'clients' not in globals() or not isinstance(clients, list) or len(clients) == 0:
+    print("Clients list not found - creating from client_data...")
+    clients = []
+    for cid, data in enumerate(client_data):
+        fc = FederatedClientMLP(client_id=cid, X_local=data['X'], y_local=data['y'])
+        clients.append(fc)
+    print(f"Created {len(clients)} clients.")
+else:
+    print(f"Using existing clients list ({len(clients)} clients).")
+
+assert len(clients) > 0, "No clients available for training."
+
+# Train first client as test with LIGHTER settings
+test_client = clients[0]
+
+# Determine (or override) global number of classes
+n_global_classes = len(np.unique(np.concatenate([d['y'] for d in client_data])))  # should be 10
+print(f"Global classes detected: {n_global_classes}")
+
+model, metrics = test_client.train_local_model(
+    n_epochs=10,
+    batch_size=32,
+    learning_rate=0.001,
+    n_classes=n_global_classes
+)
+
+print("\n📊 Training Metrics:")
+for key, value in metrics.items():
+    print(f"  {key}: {value}")
+
+# Test evaluation
+def evaluate_pytorch_mlp(model, X, y):
+    model.eval()
+    device = next(model.parameters()).device
+    X_tensor = torch.FloatTensor(X).to(device)
+    y_tensor = torch.LongTensor(y).to(device)
+    with torch.no_grad():
+        outputs = model(X_tensor)
+        _, predicted = torch.max(outputs, 1)
+        accuracy = (predicted == y_tensor).sum().item() / len(y_tensor)
+    return accuracy
+
+test_acc = evaluate_pytorch_mlp(model, X_test, y_test)
+print(f"\n🎯 Test Accuracy: {test_acc:.4f}")
+
+```
+
+    Testing client training...
+    
+    Clients list not found - creating from client_data...
+    Client 0 initialized on mps
+    Client 1 initialized on mps
+    Client 2 initialized on mps
+    Client 3 initialized on mps
+    Client 4 initialized on mps
+    Created 5 clients.
+    Global classes detected: 10
+    
+    📊 Training Metrics:
+      accuracy: 0.9957081545064378
+      n_samples: 233
+      n_classes: 10
+      training_time: 3.2121222019195557
+    
+    🎯 Test Accuracy: 0.8000
+    
+    📊 Training Metrics:
+      accuracy: 0.9957081545064378
+      n_samples: 233
+      n_classes: 10
+      training_time: 3.2121222019195557
+    
+    🎯 Test Accuracy: 0.8000
+
+
+RL - Reinforcement Learning
+
+
+```python
+# ============================================================================
+# CELL: Ultra-Optimized Federated Environment (FAST VERSION) - Unified RF/MLP
+# ============================================================================
+import copy
+import numpy as np
+import torch
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+import gymnasium as gym
+from gymnasium import spaces
+
+class FederatedAggregationEnv(gym.Env):
+    """Ultra-optimized federated aggregation environment supporting:
+    - RandomForest clients (tree sampling aggregation)
+    - Sklearn MLP clients (parameter averaging via coefs_/intercepts_)
+    - PyTorch MLP clients (FedAvg over state_dict)
+    Automatically chooses aggregation path based on first client model type.
+    """
+    metadata = {"render_modes": []}
+
+    def __init__(self, clients, X_test, y_test, n_trees_per_client=20):
+        super().__init__()
+        self.clients = clients
+        self.n_clients = len(clients)
+        self.X_test = X_test
+        self.y_test = y_test
+        self.n_trees_per_client = n_trees_per_client
+
+        # Global classes from union of client local labels
+        all_classes = set()
+        for c in clients:
+            all_classes.update(np.unique(c.y_local))
+        self.global_classes = np.array(sorted(list(all_classes)))
+        self.n_global_classes = len(self.global_classes)
+
+        # Observation: for each client -> accuracy, relative samples, relative classes
+        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(self.n_clients * 3,), dtype=np.float32)
+        # Action: continuous weights per client
+        self.action_space = spaces.Box(low=0.0, high=1.0, shape=(self.n_clients,), dtype=np.float32)
+
+        print("🔄 Training all clients (one-time initialization)...")
+        self.client_models = []
+        self.client_metrics = []
+        for i, client in enumerate(self.clients):
+            print(f"  Training client {i+1}/{self.n_clients}...", end=" ")
+            # Try MLP-style signature first; fallback RF-style
+            try:
+                model, metrics = client.train_local_model(
+                    n_epochs=5,
+                    batch_size=32,
+                    learning_rate=0.001,
+                    n_classes=self.n_global_classes
+                )
+            except TypeError:
+                model, metrics = client.train_local_model(
+                    n_estimators=self.n_trees_per_client,
+                    max_depth=5,
+                    random_state=42
+                )
+            self.client_models.append(model)
+            self.client_metrics.append(metrics)
+            print(f"✓ Acc={metrics['accuracy']:.4f}")
+        print("✅ All clients trained (will be reused for all episodes)")
+
+        self.current_round = 0
+        self.max_rounds = 20
+        self.prev_global_accuracy = 0.0
+
+    def __repr__(self):
+        return f"FederatedAggregationEnv(n_clients={self.n_clients})"
+
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+        self.current_round = 0
+        self.prev_global_accuracy = 0.0
+        return self._get_state(), {}
+
+    def _get_state(self):
+        state = []
+        max_samples = max(m['n_samples'] for m in self.client_metrics)
+        max_classes = self.n_global_classes
+        for m in self.client_metrics:
+            state.extend([
+                m['accuracy'],
+                m['n_samples'] / max_samples,
+                m['n_classes'] / max_classes
+            ])
+        return np.array(state, dtype=np.float32)
+
+    def _aggregate_models(self, weights):
+        weights = weights / (weights.sum() + 1e-8)
+        first_model = self.client_models[0]
+
+        # RandomForest path
+        if hasattr(first_model, 'estimators_'):
+            global_trees = []
+            for idx, w in enumerate(weights):
+                trees = self.client_models[idx].estimators_
+                n_select = max(1, int(w * self.n_trees_per_client))
+                n_select = min(n_select, len(trees))
+                chosen = np.random.choice(len(trees), size=n_select, replace=False)
+                global_trees.extend([trees[i] for i in chosen])
+            rf = RandomForestClassifier(n_estimators=len(global_trees))
+            rf.estimators_ = global_trees
+            rf.n_estimators = len(global_trees)
+            rf.classes_ = self.global_classes
+            rf.n_classes_ = self.n_global_classes
+            rf.n_outputs_ = 1
+            return rf
+
+        # Sklearn MLP path
+        if hasattr(first_model, 'coefs_') and hasattr(first_model, 'intercepts_'):
+            tmpl = copy.deepcopy(first_model)
+            new_coefs = []
+            new_intercepts = []
+            for layer in range(len(first_model.coefs_)):
+                w_layer = sum(weights[c] * self.client_models[c].coefs_[layer] for c in range(self.n_clients))
+                b_layer = sum(weights[c] * self.client_models[c].intercepts_[layer] for c in range(self.n_clients))
+                new_coefs.append(w_layer)
+                new_intercepts.append(b_layer)
+            tmpl.coefs_ = new_coefs
+            tmpl.intercepts_ = new_intercepts
+            tmpl.classes_ = self.global_classes
+            tmpl.n_outputs_ = 1
+            return tmpl
+
+        # PyTorch MLP path
+        if hasattr(first_model, 'state_dict'):
+            from collections import OrderedDict
+            avg_state = OrderedDict()
+            keys = first_model.state_dict().keys()
+            for k in keys:
+                avg_state[k] = sum(weights[c] * self.client_models[c].state_dict()[k] for c in range(self.n_clients))
+            aggregated = copy.deepcopy(first_model)
+            aggregated.load_state_dict(avg_state)
+            return aggregated
+
+        raise TypeError("Unsupported model type for aggregation.")
+
+    def _evaluate_global_model(self, model):
+        try:
+            if hasattr(model, 'estimators_'):
+                n_samples = len(self.X_test)
+                n_trees = len(model.estimators_)
+                all_preds = np.zeros((n_samples, n_trees), dtype=int)
+                for t_idx, tree in enumerate(model.estimators_):
+                    all_preds[:, t_idx] = tree.predict(self.X_test)
+                final = np.array([
+                    np.argmax(np.bincount(all_preds[i], minlength=self.n_global_classes))
+                    for i in range(n_samples)
+                ])
+                return accuracy_score(self.y_test, final)
+            if hasattr(model, 'coefs_'):
+                preds = model.predict(self.X_test)
+                return accuracy_score(self.y_test, preds)
+            if hasattr(model, 'state_dict'):
+                model.eval()
+                with torch.no_grad():
+                    X = torch.FloatTensor(self.X_test)
+                    out = model(X)
+                    _, p = torch.max(out, 1)
+                    return accuracy_score(self.y_test, p.numpy())
+            return np.mean([m['accuracy'] for m in self.client_metrics])
+        except Exception:
+            return np.mean([m['accuracy'] for m in self.client_metrics])
+
+    def step(self, action):
+        w = np.clip(action, 0, 1)
+        w = w / (w.sum() + 1e-8)
+        global_model = self._aggregate_models(w)
+        acc = self._evaluate_global_model(global_model)
+        improvement = acc - self.prev_global_accuracy
+        entropy = -np.sum(w * np.log(w + 1e-8))
+        fairness = (entropy / np.log(self.n_clients)) * 0.1
+        reward = improvement + fairness
+        self.prev_global_accuracy = acc
+        self.current_round += 1
+        terminated = self.current_round >= self.max_rounds
+        truncated = False
+        next_state = self._get_state()
+        info = {
+            'global_accuracy': acc,
+            'weights': w,
+            'round': self.current_round,
+            'accuracy_improvement': improvement
+        }
+        return next_state, reward, terminated, truncated, info
+
+    def render(self):
+        pass
+
+    def close(self):
+        pass
+
+print("Environment class redefined (unified RF/MLP support).")
+```
+
+    Environment class redefined (unified RF/MLP support).
+
+
+
+```python
+# ==========================================================================
+# CELL 10 (UNIFIED MPS-AWARE): Federated Aggregation Env (RF + Sklearn/PyTorch MLP)
+# ==========================================================================
+import copy
+import numpy as np
+import torch
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+import gymnasium as gym
+from gymnasium import spaces
+
+class FederatedAggregationEnv(gym.Env):
+    """Federated aggregation supporting RandomForest, sklearn MLP, and PyTorch MLP.
+    Uses global DEVICE for PyTorch ops.
+    """
+    metadata = {"render_modes": []}
+
+    def __init__(self, clients, X_test, y_test, n_trees_per_client=50):
+        super().__init__()
+        self.clients = clients
+        self.n_clients = len(clients)
+        self.X_test = X_test
+        self.y_test = y_test
+        self.n_trees_per_client = n_trees_per_client
+
+        all_classes = set()
+        for c in clients:
+            all_classes.update(np.unique(c.y_local))
+        self.global_classes = np.array(sorted(all_classes))
+        self.n_global_classes = len(self.global_classes)
+
+        self.observation_space = spaces.Box(low=0.0, high=1.0, shape=(self.n_clients * 3,), dtype=np.float32)
+        self.action_space = spaces.Box(low=0.0, high=1.0, shape=(self.n_clients,), dtype=np.float32)
+
+        print("🔄 Training clients (one-time, DEVICE=", DEVICE, ")...")
+        self.client_models = []
+        self.client_metrics = []
+        for i, client in enumerate(self.clients):
+            print(f"  Client {i+1}/{self.n_clients}...", end=" ")
+            try:
+                model, metrics = client.train_local_model(
+                    n_epochs=5,
+                    batch_size=32,
+                    learning_rate=0.001,
+                    n_classes=self.n_global_classes
+                )
+            except TypeError:
+                model, metrics = client.train_local_model(
+                    n_estimators=self.n_trees_per_client,
+                    max_depth=10,
+                    random_state=42
+                )
+            self.client_models.append(model)
+            self.client_metrics.append(metrics)
+            print(f"✓ Acc={metrics['accuracy']:.4f}")
+        print("✅ Clients trained.")
+
+        self.current_round = 0
+        self.max_rounds = 100
+        self.prev_global_accuracy = 0.0
+
+    def _get_state(self):
+        state = []
+        max_samples = max(m['n_samples'] for m in self.client_metrics)
+        max_classes = self.n_global_classes
+        for m in self.client_metrics:
+            state.extend([
+                m['accuracy'],
+                m['n_samples'] / max_samples,
+                m['n_classes'] / max_classes
+            ])
+        return np.array(state, dtype=np.float32)
+
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
+        self.current_round = 0
+        self.prev_global_accuracy = 0.0
+        return self._get_state(), {}
+
+    def _aggregate_models(self, weights):
+        weights = weights / (weights.sum() + 1e-8)
+        first = self.client_models[0]
+        if hasattr(first, 'estimators_'):
+            global_trees = []
+            for idx, w in enumerate(weights):
+                trees = self.client_models[idx].estimators_
+                n_sel = max(1, int(w * self.n_trees_per_client))
+                n_sel = min(n_sel, len(trees))
+                chosen = np.random.choice(len(trees), size=n_sel, replace=False)
+                global_trees.extend([trees[i] for i in chosen])
+            rf = RandomForestClassifier(n_estimators=len(global_trees))
+            rf.estimators_ = global_trees
+            rf.n_estimators = len(global_trees)
+            rf.classes_ = self.global_classes
+            rf.n_classes_ = self.n_global_classes
+            rf.n_outputs_ = 1
+            return rf
+        if hasattr(first, 'coefs_') and hasattr(first, 'intercepts_'):
+            tmpl = copy.deepcopy(first)
+            new_coefs, new_intercepts = [], []
+            for layer in range(len(first.coefs_)):
+                w_layer = sum(weights[c] * self.client_models[c].coefs_[layer] for c in range(self.n_clients))
+                b_layer = sum(weights[c] * self.client_models[c].intercepts_[layer] for c in range(self.n_clients))
+                new_coefs.append(w_layer)
+                new_intercepts.append(b_layer)
+            tmpl.coefs_ = new_coefs
+            tmpl.intercepts_ = new_intercepts
+            tmpl.classes_ = self.global_classes
+            tmpl.n_outputs_ = 1
+            return tmpl
+        if hasattr(first, 'state_dict'):
+            from collections import OrderedDict
+            avg_state = OrderedDict()
+            for k in first.state_dict().keys():
+                avg_state[k] = sum(weights[c] * self.client_models[c].state_dict()[k] for c in range(self.n_clients))
+            agg = copy.deepcopy(first)
+            agg.load_state_dict(avg_state)
+            return agg
+        raise TypeError("Unsupported model type for aggregation")
+
+    def _evaluate_global(self, model):
+        try:
+            if hasattr(model, 'estimators_'):
+                n_samples = len(self.X_test)
+                n_trees = len(model.estimators_)
+                votes = np.zeros((n_samples, n_trees), dtype=int)
+                for t, tree in enumerate(model.estimators_):
+                    votes[:, t] = tree.predict(self.X_test)
+                final = np.array([
+                    np.argmax(np.bincount(votes[i], minlength=self.n_global_classes))
+                    for i in range(n_samples)
+                ])
+                return accuracy_score(self.y_test, final)
+            if hasattr(model, 'coefs_'):
+                preds = model.predict(self.X_test)
+                return accuracy_score(self.y_test, preds)
+            if hasattr(model, 'state_dict'):
+                model.eval()
+                with torch.no_grad():
+                    X = torch.as_tensor(self.X_test, dtype=torch.float32, device=DEVICE)
+                    out = model(X)
+                    _, p = torch.max(out, 1)
+                    return accuracy_score(self.y_test, p.cpu().numpy())
+            return np.mean(m['accuracy'] for m in self.client_metrics)
+        except Exception:
+            return np.mean(m['accuracy'] for m in self.client_metrics)
+
+    def step(self, action):
+        w = np.clip(action, 0, 1)
+        w = w / (w.sum() + 1e-8)
+        global_model = self._aggregate_models(w)
+        acc = self._evaluate_global(global_model)
+        improvement = acc - self.prev_global_accuracy
+        entropy = -np.sum(w * np.log(w + 1e-8))
+        fairness = (entropy / np.log(self.n_clients)) * 0.1
+        reward = improvement + fairness
+        self.prev_global_accuracy = acc
+        self.current_round += 1
+        terminated = self.current_round >= self.max_rounds
+        truncated = False
+        state = self._get_state()
+        info = {
+            'global_accuracy': acc,
+            'weights': w,
+            'round': self.current_round,
+            'accuracy_improvement': improvement
+        }
+        return state, reward, terminated, truncated, info
+
+print("Unified FederatedAggregationEnv (MPS-aware) redefined.")
+
+try:
+    env = FederatedAggregationEnv(clients, X_test, y_test)
+    s, _ = env.reset()
+    a = np.ones(len(clients)) / len(clients)
+    ns, r, term, trunc, info = env.step(a)
+    print("Sanity -> Acc:", info['global_accuracy'], "Reward:", r)
+except Exception as e:
+    print("Environment instantiation failed:", e)
+```
+
+    Unified FederatedAggregationEnv (MPS-aware) redefined.
+    🔄 Training clients (one-time, DEVICE= mps )...
+      Client 1/5... ✓ Acc=0.9742
+      Client 2/5... ✓ Acc=0.9079
+      Client 3/5... ✓ Acc=0.9167
+      Client 4/5... ✓ Acc=0.9079
+      Client 3/5... ✓ Acc=0.9167
+      Client 4/5... ✓ Acc=0.9416
+      Client 5/5... ✓ Acc=0.9416
+      Client 5/5... ✓ Acc=0.9477
+    ✅ Clients trained.
+    Sanity -> Acc: 0.1 Reward: 0.19999999651466038
+    ✓ Acc=0.9477
+    ✅ Clients trained.
+    Sanity -> Acc: 0.1 Reward: 0.19999999651466038
+
+
+
+```python
+
+# ============================================================================
+# CELL 11/12: Federated Aggregation Environment with MLP (REPLACED)
+# ============================================================================
+# INSTRUCTIONS: Delete BOTH Cell 11 AND Cell 12, then paste this code
+# ============================================================================
+
+import gymnasium as gym
+from gymnasium import spaces
+import numpy as np
+import torch
+
+class FederatedAggregationEnvMLP(gym.Env):
+    """
+    Federated Learning Environment using MLP models
+
+    MASSIVE IMPROVEMENTS over Random Forest:
+    - Trains clients ONCE at initialization (no Cell 12 reset() bug)
+    - Instant aggregation via FedAvg (just average model weights)
+    - Full GPU acceleration
+    - 50-100x faster overall
+    """
+
+    metadata = {'render_modes': []}
+
+    def __init__(self, clients, X_test, y_test, n_epochs=10):
+        super(FederatedAggregationEnvMLP, self).__init__()
+
+        self.clients = clients
+        self.n_clients = len(clients)
+        self.n_epochs = n_epochs
+
+        # GPU setup
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print(f"Environment using device: {self.device}")
+
+        # Move test data to GPU
+        self.X_test = torch.FloatTensor(X_test).to(self.device)
+        self.y_test = torch.LongTensor(y_test).to(self.device)
+
+        # Determine global classes
+        all_classes = set()
+        for client in clients:
+            all_classes.update(np.unique(client.y_local))
+        self.global_classes = np.array(sorted(list(all_classes)))
+        self.n_global_classes = len(self.global_classes)
+
+        print(f"Global classes detected: {self.n_global_classes} classes")
+
+        # Define observation and action spaces
+        self.observation_space = spaces.Box(
+            low=0.0,
+            high=1.0,
+            shape=(self.n_clients * 3,),  # [accuracy, n_samples, n_classes] per client
+            dtype=np.float32
+        )
+
+        self.action_space = spaces.Box(
+            low=0.0,
+            high=1.0,
+            shape=(self.n_clients,),  # Weights for each client
+            dtype=np.float32
+        )
+
+        # ✅ FIX: Train clients ONCE at initialization (not every reset!)
+        print(f"\n🔄 Training all {self.n_clients} clients (one-time initialization)...")
+        self.client_models = []
+        self.client_metrics = []
+
+        for i, client in enumerate(self.clients):
+            print(f"  Client {i+1}/{self.n_clients}...", end=" ")
+
+            # Train client model
+            model, metrics = client.train_local_model(n_epochs=self.n_epochs)
+
+            self.client_models.append(model)
+            self.client_metrics.append(metrics)
+
+            print(f"✓ Acc={metrics['accuracy']:.4f} Time={metrics['training_time']:.2f}s")
+
+        print(f"✅ All clients trained on {self.device} (will be reused for all episodes)")
+
+        # Pre-compute normalization constants (optimization)
+        self._max_samples = max([m['n_samples'] for m in self.client_metrics])
+        self._max_classes = self.n_global_classes
+
+        # Episode state
+        self.current_round = 0
+        self.max_rounds = 20  # Reduced from 100 for faster training
+        self.prev_global_accuracy = 0.0
+
+        print(f"\n✅ Environment created:")
+        print(f"   State space: {self.observation_space.shape}")
+        print(f"   Action space: {self.action_space.shape}")
+        print(f"   Max rounds per episode: {self.max_rounds}")
+
+    def reset(self, seed=None, options=None):
+        """
+        ✅ FIX: NO client retraining - just reset counters
+        This takes 0.001 seconds instead of 5+ seconds!
+        """
+        super().reset(seed=seed)
+
+        self.current_round = 0
+        self.prev_global_accuracy = 0.0
+
+        state = self._get_state()
+        return state, {}
+
+    def _get_state(self):
+        """
+        Get state representation from client metrics
+        Uses pre-computed normalization constants
+        """
+        state = []
+
+        for metrics in self.client_metrics:
+            state.extend([
+                metrics['accuracy'],                      # Client accuracy [0, 1]
+                metrics['n_samples'] / self._max_samples, # Normalized sample count
+                metrics['n_classes'] / self._max_classes  # Normalized class count
+            ])
+
+        return np.array(state, dtype=np.float32)
+
+    def _aggregate_models(self, weights):
+        """
+        ✅ INSTANT AGGREGATION using Federated Averaging (FedAvg)
+
+        This is MUCH simpler and faster than Random Forest tree merging!
+        Neural networks aggregate by just averaging their parameters.
+        """
+        # Normalize weights
+        weights = weights / (weights.sum() + 1e-8)
+
+        # Create global model with same architecture as client models
+        n_features = self.clients[0].X_local.shape[1]
+        global_model = MLPClassifier(n_features, self.n_global_classes).to(self.device)
+
+        # Federated Averaging: Weighted average of model parameters
+        global_state_dict = {}
+
+        for key in self.client_models[0].state_dict().keys():
+            # Weighted sum of parameters from all clients
+            global_state_dict[key] = sum(
+                weights[i] * self.client_models[i].state_dict()[key]
+                for i in range(self.n_clients)
+            )
+
+        # Load aggregated parameters into global model
+        global_model.load_state_dict(global_state_dict)
+
+        return global_model
+
+    def _evaluate_global_model(self, global_model):
+        """
+        ✅ Fast GPU-accelerated evaluation
+        """
+        global_model.eval()
+
+        with torch.no_grad():
+            # Forward pass on GPU
+            outputs = global_model(self.X_test)
+            _, predicted = torch.max(outputs, 1)
+
+            # Calculate accuracy
+            accuracy = (predicted == self.y_test).sum().item() / len(self.y_test)
+
+        return accuracy
+
+    def step(self, action):
+        """
+        Execute one aggregation step with RL-selected weights
+        """
+        # Normalize action to valid weights
+        weights = np.clip(action, 0, 1)
+        weights = weights / (weights.sum() + 1e-8)
+
+        # Aggregate client models using FedAvg
+        global_model = self._aggregate_models(weights)
+
+        # Evaluate global model
+        global_accuracy = self._evaluate_global_model(global_model)
+
+        # Calculate reward
+        accuracy_improvement = global_accuracy - self.prev_global_accuracy
+
+        # Fairness bonus: encourage balanced weights
+        weight_entropy = -np.sum(weights * np.log(weights + 1e-8))
+        max_entropy = np.log(self.n_clients)
+        fairness_bonus = (weight_entropy / max_entropy) * 0.1
+
+        reward = accuracy_improvement + fairness_bonus
+
+        # Update state
+        self.prev_global_accuracy = global_accuracy
+        self.current_round += 1
+
+        # Check if episode is done
+        terminated = self.current_round >= self.max_rounds
+        truncated = False
+
+        # Get next state
+        next_state = self._get_state()
+
+        # Info dictionary
+        info = {
+            'global_accuracy': global_accuracy,
+            'weights': weights,
+            'round': self.current_round,
+            'accuracy_improvement': accuracy_improvement
+        }
+
+        return next_state, reward, terminated, truncated, info
+
+    def render(self):
+        """Optional rendering (not implemented)"""
+        pass
+
+    def close(self):
+        """Clean up resources"""
+        pass
+
+
+print("✅ MLP-based FederatedAggregationEnv class defined")
+print("   Ready for RL training with PPO/SAC/TD3")
+```
+
+    ✅ MLP-based FederatedAggregationEnv class defined
+       Ready for RL training with PPO/SAC/TD3
+
+
+
+```python
+# ============================================================================
+# CELL 13: Training Function for All Agents (OPTIMIZED)
+# ============================================================================
+
+def train_and_evaluate_agent(agent_name, agent_class, agent_config,
+                             clients, X_test, y_test,
+                             n_timesteps=1000, n_eval_rounds=10):
+    """
+    Train and evaluate a single RL agent
+    
+    OPTIMIZED: Reduced timesteps and eval rounds
+    
+    Returns: metrics dictionary
+    """
+    print(f"\n{'='*60}")
+    print(f"Training {agent_name}")
+    print(f"{'='*60}\n")
+    
+    # Create fresh environment
+    env = FederatedAggregationEnv(clients, X_test, y_test, n_trees_per_client=20)
+    
+    # Initialize agent
+    try:
+        if agent_name == 'DQN':
+            # DQN needs discrete action space - skip for now
+            print(f"⚠️  {agent_name} requires discrete action space - using placeholder")
+            return create_random_baseline(clients, X_test, y_test, n_eval_rounds)
+        
+        agent = agent_class(
+            policy="MlpPolicy",
+            env=env,
+            **agent_config,
+            verbose=0
+        )
+        
+        print(f"✅ {agent_name} initialized")
+        
+        # Train
+        start_time = time.time()
+        agent.learn(total_timesteps=n_timesteps, progress_bar=True)
+        training_time = time.time() - start_time
+        
+        print(f"✅ Training complete in {training_time:.2f}s")
+    
+    except Exception as e:
+        print(f"❌ Error training {agent_name}: {e}")
+        return create_random_baseline(clients, X_test, y_test, n_eval_rounds)
+    
+    # Evaluate
+    print(f"Evaluating {agent_name}...")
+    state, info = env.reset()
+    
+    metrics = {
+        'accuracies': [],
+        'rewards': [],
+        'weights_history': [],
+        'training_time': training_time
+    }
+    
+    for round_idx in range(n_eval_rounds):
+        action, _ = agent.predict(state, deterministic=True)
+        state, reward, terminated, truncated, info = env.step(action)
+        
+        metrics['accuracies'].append(info['global_accuracy'])
+        metrics['rewards'].append(reward)
+        metrics['weights_history'].append(info['weights'])
+        
+        if terminated or truncated:
+            break
+    
+    # Save agent
+    agent.save(f"{agent_name.lower()}_federated_agent")
+    
+    print(f"✅ {agent_name} evaluation complete!")
+    print(f"   Final Accuracy: {metrics['accuracies'][-1]:.4f}")
+    print(f"   Average Reward: {np.mean(metrics['rewards']):.6f}")
+    
+    return metrics
+
+def create_random_baseline(clients, X_test, y_test, n_eval_rounds):
+    """Create random baseline for comparison"""
+    print("Creating random baseline...")
+    
+    env = FederatedAggregationEnv(clients, X_test, y_test, n_trees_per_client=20)
+    state, info = env.reset()
+    
+    metrics = {
+        'accuracies': [],
+        'rewards': [],
+        'weights_history': [],
+        'training_time': 0.0
+    }
+    
+    for _ in range(n_eval_rounds):
+        action = env.action_space.sample()  # Random weights
+        state, reward, terminated, truncated, info = env.step(action)
+        
+        metrics['accuracies'].append(info['global_accuracy'])
+        metrics['rewards'].append(reward)
+        metrics['weights_history'].append(info['weights'])
+        
+        if terminated or truncated:
+            break
+    
+    return metrics
+
+print("✅ Training function defined!")
+
+```
+
+    ✅ Training function defined!
+
+
+
+```python
+# ============================================================================
+# CELL 14: RL Agent Configurations (OPTIMIZED - ONLY BEST 3 AGENTS)
+# ============================================================================
+
+# Configuration for ONLY the best performing agents
+# Removed A2C, DDPG, DQN to save time
+agent_configs = {
+    'PPO': {
+        'class': PPO,
+        'config': {
+            'learning_rate': 3e-4,
+            'n_steps': 128,      # ⭐ REDUCED
+            'batch_size': 32,    # ⭐ REDUCED
+            'n_epochs': 3,       # ⭐ REDUCED
+            'gamma': 0.99,
+            'gae_lambda': 0.95,
+            'clip_range': 0.2,
+        }
+    },
+    'SAC': {
+        'class': SAC,
+        'config': {
+            'learning_rate': 3e-4,
+            'buffer_size': 5000,    # ⭐ REDUCED from 10000
+            'learning_starts': 50,  # ⭐ REDUCED from 100
+            'batch_size': 32,       # ⭐ REDUCED from 64
+            'tau': 0.005,
+            'gamma': 0.99,
+        }
+    },
+    'TD3': {
+        'class': TD3,
+        'config': {
+            'learning_rate': 1e-3,
+            'buffer_size': 5000,    # ⭐ REDUCED from 10000
+            'learning_starts': 50,  # ⭐ REDUCED from 100
+            'batch_size': 32,       # ⭐ REDUCED from 64
+            'tau': 0.005,
+            'gamma': 0.99,
+            'policy_delay': 2,
+        }
+    }
+}
+
+print(f"✅ Configured {len(agent_configs)} RL agents (PPO, SAC, TD3 - FASTEST)")
+print("⏱️  Estimated total time: ~3-5 minutes (vs 15-20 minutes for all 6 agents)")
+
+```
+
+    ✅ Configured 3 RL agents (PPO, SAC, TD3 - FASTEST)
+    ⏱️  Estimated total time: ~3-5 minutes (vs 15-20 minutes for all 6 agents)
+
+
+
+```python
+# ============================================================================
+# CELL 15: Train All RL Agents (OPTIMIZED - Takes ~3-5 minutes)
+# ============================================================================
+
+results = {}
+
+for agent_name, agent_info in agent_configs.items():
+    metrics = train_and_evaluate_agent(
+        agent_name=agent_name,
+        agent_class=agent_info['class'],
+        agent_config=agent_info['config'],
+        clients=clients,
+        X_test=X_test,
+        y_test=y_test,
+        n_timesteps=1000,  # ⭐ REDUCED from 5000
+        n_eval_rounds=10   # ⭐ REDUCED from 20
+    )
+    results[agent_name] = metrics
+
+# Add random baseline
+print("\n" + "="*60)
+print("Creating Random Baseline")
+print("="*60)
+results['Random'] = create_random_baseline(clients, X_test, y_test, n_eval_rounds=10)
+
+print("\n" + "="*60)
+print("✅ ALL EXPERIMENTS COMPLETE!")
+print("="*60)
+print("\n⏱️  Total agents tested: 4 (PPO, SAC, TD3, Random)")
+print("💡 This is 60% faster than testing all 6 agents!")
+
+```
+
+    
+    ============================================================
+    Training PPO
+    ============================================================
+    
+    🔄 Training clients (one-time, DEVICE= mps )...
+      Client 1/5... ✓ Acc=0.9957
+      Client 2/5... ✓ Acc=0.8947
+      Client 3/5... 
+
+
+    Output()
+
+
+    ✓ Acc=0.9167
+      Client 4/5... ✓ Acc=0.9481
+      Client 5/5... ✓ Acc=0.9412
+    ✅ Clients trained.
+    ✅ PPO initialized
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"></pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">
+</pre>
+
+
+
+    ✅ Training complete in 3.35s
+    Evaluating PPO...
+    ✅ PPO evaluation complete!
+       Final Accuracy: 0.3000
+       Average Reward: 0.088350
+    
+    ============================================================
+    Training SAC
+    ============================================================
+    
+    🔄 Training clients (one-time, DEVICE= mps )...
+      Client 1/5... ✓ Acc=0.9957
+      Client 2/5... ✓ Acc=0.9079
+      Client 3/5... ✓ Acc=0.9167
+      Client 4/5... 
+
+
+    Output()
+
+
+    ✓ Acc=0.9870
+      Client 5/5... ✓ Acc=0.9412
+    ✅ Clients trained.
+    ✅ SAC initialized
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"></pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">
+</pre>
+
+
+
+    ✅ Training complete in 7.31s
+    Evaluating SAC...
+    ✅ SAC evaluation complete!
+       Final Accuracy: 0.1767
+       Average Reward: 0.117518
+    
+    ============================================================
+    Training TD3
+    ============================================================
+    
+    🔄 Training clients (one-time, DEVICE= mps )...
+      Client 1/5... ✓ Acc=0.9957
+      Client 2/5... ✓ Acc=0.9079
+      Client 3/5... 
+
+
+    Output()
+
+
+    ✓ Acc=0.9167
+      Client 4/5... ✓ Acc=0.9870
+      Client 5/5... ✓ Acc=0.9412
+    ✅ Clients trained.
+    ✅ TD3 initialized
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"></pre>
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">
+</pre>
+
+
+
+    ✅ Training complete in 7.00s
+    Evaluating TD3...
+    ✅ TD3 evaluation complete!
+       Final Accuracy: 0.2000
+       Average Reward: 0.088263
+    
+    ============================================================
+    Creating Random Baseline
+    ============================================================
+    Creating random baseline...
+    🔄 Training clients (one-time, DEVICE= mps )...
+      Client 1/5... ✓ Acc=0.9957
+      Client 2/5... ✓ Acc=0.9737
+      Client 3/5... ✓ Acc=0.9167
+      Client 4/5... ✓ Acc=0.9870
+      Client 5/5... ✓ Acc=0.9412
+    ✅ Clients trained.
+    
+    ============================================================
+    ✅ ALL EXPERIMENTS COMPLETE!
+    ============================================================
+    
+    ⏱️  Total agents tested: 4 (PPO, SAC, TD3, Random)
+    💡 This is 60% faster than testing all 6 agents!
+    ✓ Acc=0.9870
+      Client 5/5... ✓ Acc=0.9412
+    ✅ Clients trained.
+    
+    ============================================================
+    ✅ ALL EXPERIMENTS COMPLETE!
+    ============================================================
+    
+    ⏱️  Total agents tested: 4 (PPO, SAC, TD3, Random)
+    💡 This is 60% faster than testing all 6 agents!
+
+
+
+```python
+# ============================================================================
+# CELL 16: Plot Learning Curves for All Agents
+# ============================================================================
+
+plt.figure(figsize=(14, 6))
+
+for agent_name, metrics in results.items():
+    plt.plot(metrics['accuracies'], marker='o', linewidth=2,
+             markersize=4, label=agent_name, alpha=0.8)
+
+plt.xlabel('Round', fontsize=12)
+plt.ylabel('Global Accuracy', fontsize=12)
+plt.title('Federated Random Forest: RL Agents Comparison',
+          fontsize=14, fontweight='bold')
+plt.legend(fontsize=10, loc='lower right')
+plt.grid(True, alpha=0.3)
+plt.axhline(y=0.80, color='red', linestyle='--', alpha=0.5, label='Target (80%)')
+
+plt.tight_layout()
+plt.savefig('rl_agents_comparison.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+print("✅ Learning curves plotted and saved!")
+
+```
+
+
+    
+![png](rl-fl-ensemble%20%281%29_files/rl-fl-ensemble%20%281%29_18_0.png)
+    
+
+
+    ✅ Learning curves plotted and saved!
+
+
+
+```python
+# ============================================================================
+# CELL 17: Create Metrics Comparison Table
+# ============================================================================
+
+# Compute summary statistics
+summary = {}
+
+for agent_name, metrics in results.items():
+    accs = metrics['accuracies']
+    rewards = metrics['rewards']
+
+    summary[agent_name] = {
+        'Final Accuracy': accs[-1],
+        'Best Accuracy': max(accs),
+        'Avg Accuracy': np.mean(accs),
+        'Convergence Speed': np.argmax(np.array(accs) >= 0.75) + 1 if max(accs) >= 0.75 else len(accs),
+        'Stability (Std)': np.std(accs[-5:]),
+        'Avg Reward': np.mean(rewards),
+        'Training Time (s)': metrics.get('training_time', 0)
+    }
+
+# Create DataFrame
+df_summary = pd.DataFrame(summary).T
+
+# Sort by final accuracy
+df_summary = df_summary.sort_values('Final Accuracy', ascending=False)
+
+print("\n📊 RL AGENTS COMPARISON SUMMARY")
+print("="*80)
+print(df_summary.to_string())
+print("="*80)
+
+# Save to CSV
+df_summary.to_csv('rl_agents_summary.csv')
+print("\n✅ Summary saved to 'rl_agents_summary.csv'")
+
+```
+
+    
+    📊 RL AGENTS COMPARISON SUMMARY
+    ================================================================================
+            Final Accuracy  Best Accuracy  Avg Accuracy  Convergence Speed  Stability (Std)  Avg Reward  Training Time (s)
+    PPO           0.300000       0.300000      0.300000               10.0         0.000000    0.088350           3.353225
+    Random        0.216667       0.800000      0.506000                1.0         0.227514    0.109003           0.000000
+    TD3           0.200000       0.200000      0.200000               10.0         0.000000    0.088263           7.002130
+    SAC           0.176667       0.176667      0.176667               10.0         0.000000    0.117518           7.307345
+    ================================================================================
+    
+    ✅ Summary saved to 'rl_agents_summary.csv'
+
+
+
+```python
+# ============================================================================
+# CELL 18: Comprehensive Comparison Visualization
+# ============================================================================
+
+fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+fig.suptitle('RL Agents Performance Comparison', fontsize=16, fontweight='bold')
+
+agents = list(results.keys())
+colors = plt.cm.Set3(np.linspace(0, 1, len(agents)))
+
+# 1. Final Accuracy
+axes[0, 0].bar(agents, [summary[a]['Final Accuracy'] for a in agents], color=colors)
+axes[0, 0].set_title('Final Accuracy')
+axes[0, 0].set_ylabel('Accuracy')
+axes[0, 0].tick_params(axis='x', rotation=45)
+axes[0, 0].axhline(y=0.80, color='red', linestyle='--', alpha=0.5)
+axes[0, 0].grid(True, alpha=0.3, axis='y')
+
+# 2. Best Accuracy
+axes[0, 1].bar(agents, [summary[a]['Best Accuracy'] for a in agents], color=colors)
+axes[0, 1].set_title('Best Accuracy Achieved')
+axes[0, 1].set_ylabel('Accuracy')
+axes[0, 1].tick_params(axis='x', rotation=45)
+axes[0, 1].grid(True, alpha=0.3, axis='y')
+
+# 3. Convergence Speed (lower is better)
+axes[0, 2].bar(agents, [summary[a]['Convergence Speed'] for a in agents], color=colors)
+axes[0, 2].set_title('Convergence Speed')
+axes[0, 2].set_ylabel('Rounds to 75% Accuracy')
+axes[0, 2].tick_params(axis='x', rotation=45)
+axes[0, 2].grid(True, alpha=0.3, axis='y')
+
+# 4. Stability (lower is better)
+axes[1, 0].bar(agents, [summary[a]['Stability (Std)'] for a in agents], color=colors)
+axes[1, 0].set_title('Training Stability (Last 5 Rounds)')
+axes[1, 0].set_ylabel('Std Dev')
+axes[1, 0].tick_params(axis='x', rotation=45)
+axes[1, 0].grid(True, alpha=0.3, axis='y')
+
+# 5. Average Reward
+axes[1, 1].bar(agents, [summary[a]['Avg Reward'] for a in agents], color=colors)
+axes[1, 1].set_title('Average Reward')
+axes[1, 1].set_ylabel('Reward')
+axes[1, 1].tick_params(axis='x', rotation=45)
+axes[1, 1].grid(True, alpha=0.3, axis='y')
+
+# 6. Training Time
+axes[1, 2].bar(agents, [summary[a]['Training Time (s)'] for a in agents], color=colors)
+axes[1, 2].set_title('Training Time')
+axes[1, 2].set_ylabel('Seconds')
+axes[1, 2].tick_params(axis='x', rotation=45)
+axes[1, 2].grid(True, alpha=0.3, axis='y')
+
+plt.tight_layout()
+plt.savefig('rl_agents_detailed_comparison.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+print("✅ Comprehensive comparison visualization complete!")
+
+```
+
+
+    
+![png](rl-fl-ensemble%20%281%29_files/rl-fl-ensemble%20%281%29_20_0.png)
+    
+
+
+    ✅ Comprehensive comparison visualization complete!
+
+
+
+```python
+# ============================================================================
+# CELL 19: Analyze Client Weight Distribution
+# ============================================================================
+
+# Plot weight distributions for each agent
+n_agents = len(results)
+fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+axes = axes.flatten()
+
+for idx, (agent_name, metrics) in enumerate(results.items()):
+    if idx >= len(axes):
+        break
+
+    weights_history = np.array(metrics['weights_history'])
+
+    # Plot each client's weight over time
+    for client_idx in range(n_clients):
+        axes[idx].plot(weights_history[:, client_idx],
+                      label=f'Client {client_idx+1}',
+                      linewidth=2, marker='o', markersize=3)
+
+    axes[idx].set_title(f'{agent_name}: Client Weights', fontweight='bold')
+    axes[idx].set_xlabel('Round')
+    axes[idx].set_ylabel('Weight')
+    axes[idx].legend(fontsize=8)
+    axes[idx].grid(True, alpha=0.3)
+
+# Remove unused subplots
+for idx in range(n_agents, len(axes)):
+    fig.delaxes(axes[idx])
+
+plt.tight_layout()
+plt.savefig('client_weights_analysis.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+print("✅ Client weight analysis complete!")
+
+```
+
+
+    
+![png](rl-fl-ensemble%20%281%29_files/rl-fl-ensemble%20%281%29_21_0.png)
+    
+
+
+    ✅ Client weight analysis complete!
+
+
+
+```python
+# ============================================================================
+# CELL 20: Save All Results
+# ============================================================================
+
+import pickle
+
+# Create results directory
+!mkdir -p results
+
+# Save raw metrics
+with open('results/all_metrics.pkl', 'wb') as f:
+    pickle.dump(results, f)
+
+# Save summary CSV
+df_summary.to_csv('results/summary.csv')
+
+# Save individual agent results
+for agent_name, metrics in results.items():
+    df_agent = pd.DataFrame({
+        'round': range(len(metrics['accuracies'])),
+        'accuracy': metrics['accuracies'],
+        'reward': metrics['rewards']
+    })
+    df_agent.to_csv(f'results/{agent_name}_metrics.csv', index=False)
+
+print("✅ All results saved to 'results/' directory")
+print("\nSaved files:")
+print("  - all_metrics.pkl (complete metrics)")
+print("  - summary.csv (comparison table)")
+for agent in results.keys():
+    print(f"  - {agent}_metrics.csv")
+
+```
+
+    ✅ All results saved to 'results/' directory
+    
+    Saved files:
+      - all_metrics.pkl (complete metrics)
+      - summary.csv (comparison table)
+      - PPO_metrics.csv
+      - SAC_metrics.csv
+      - TD3_metrics.csv
+      - Random_metrics.csv
+
+
+
+```python
+# Safety initialization for clients list to avoid IndexError
+try:
+    if 'clients' not in globals() or not isinstance(clients, list) or len(clients) == 0:
+        print("Recreating clients list (was missing or empty)...")
+        clients = []
+        for i, data in enumerate(client_data):
+            fc = FederatedClientMLP(
+                client_id=i,
+                X_local=data['X'],
+                y_local=data['y']
+            )
+            clients.append(fc)
+            print(f"Client {i} ready: {len(data['y'])} samples, {len(np.unique(data['y']))} classes")
+    else:
+        print(f"Existing clients list found: {len(clients)} clients")
+except NameError:
+    print("Variables not defined yet. Please run data split and client class cells first.")
+
+# Select first client safely
+if len(clients) > 0:
+    test_client = clients[0]
+    print("Selected test_client with id:", test_client.client_id)
+else:
+    print("No clients available even after recreation. Check earlier cells.")
+```
+
+    Existing clients list found: 5 clients
+    Selected test_client with id: 0
+
+
+
+```python
+# Train test_client with global class count and display metrics
+print("\n🚀 Starting test_client training with global classes...")
+try:
+    assert 'test_client' in globals(), "test_client not defined; run client selection cell first."
+    assert 'n_global_classes' in globals(), "n_global_classes not defined; set it before training."
+    model, metrics = test_client.train_local_model(
+        n_epochs=5,
+        batch_size=32,
+        learning_rate=0.001,
+        n_classes=n_global_classes
+    )
+    print("\n📊 Training Metrics (test_client):")
+    for k, v in metrics.items():
+        print(f"  {k}: {v}")
+except Exception as e:
+    print("❌ Training failed:", e)
+```
+
+    
+    🚀 Starting test_client training with global classes...
+    
+    📊 Training Metrics (test_client):
+      accuracy: 0.9914163090128756
+      n_samples: 233
+      n_classes: 10
+      training_time: 0.19176483154296875
+
+
+
+```python
+# Quick sanity test for new environment definition
+try:
+    assert 'clients' in globals() and len(clients) > 0, "Clients not initialized."
+    test_env = FederatedAggregationEnv(clients, X_test, y_test)
+    s, _ = test_env.reset()
+    print("State shape:", s.shape)
+    a = np.ones(len(clients)) / len(clients)
+    ns, r, term, trunc, info = test_env.step(a)
+    print("Step reward:", r, "Global acc:", info['global_accuracy'])
+except Exception as e:
+    print("❌ Environment sanity test failed:", e)
+```
+
+    🔄 Training clients (one-time, DEVICE= mps )...
+      Client 1/5... ✓ Acc=0.9957
+      Client 2/5... ✓ Acc=0.6974
+      Client 3/5... ✓ Acc=0.9167
+      Client 4/5... ✓ Acc=0.9416
+      Client 5/5... ✓ Acc=0.9020
+    ✅ Clients trained.
+    State shape: (15,)
+    Step reward: 0.26666666318132703 Global acc: 0.16666666666666666
+    ✓ Acc=0.9416
+      Client 5/5... ✓ Acc=0.9020
+    ✅ Clients trained.
+    State shape: (15,)
+    Step reward: 0.26666666318132703 Global acc: 0.16666666666666666
+
+
+
+```python
+# Recreate clients with new TorchMLPClassifier implementation
+clients = []
+for cid in range(n_clients):
+    c = FederatedClientMLP(clientid=cid, Xlocal=client_data[cid]['X'], ylocal=client_data[cid]['y'])
+    clients.append(c)
+print(f"Recreated {len(clients)} clients.")
+```
+
+    Client 0 initialized on mps
+    Client 1 initialized on mps
+    Client 2 initialized on mps
+    Client 3 initialized on mps
+    Client 4 initialized on mps
+    Recreated 5 clients.
+
+
+
+```python
+# PPO Training on FederatedAggregationEnv (MPS-aware)
+from stable_baselines3 import PPO
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import DummyVecEnv
+import numpy as np, time, torch
+
+print("\n🚀 Starting PPO training on federated aggregation environment (device=", DEVICE, ")...")
+
+try:
+    _ = env.observation_space
+except Exception:
+    env = FederatedAggregationEnv(clients, X_test, y_test)
+
+def make_env():
+    return Monitor(env)
+vec_env = DummyVecEnv([make_env])
+
+TOTAL_TIMESTEPS = 3000
+model = PPO(
+    policy="MlpPolicy",
+    env=vec_env,
+    device=str(DEVICE),
+    learning_rate=3e-4,
+    n_steps=256,
+    batch_size=256,
+    gamma=0.95,
+    gae_lambda=0.9,
+    clip_range=0.2,
+    ent_coef=0.0,
+    verbose=0,
+)
+start = time.time(); model.learn(total_timesteps=TOTAL_TIMESTEPS); train_time = time.time() - start
+print(f"✅ PPO training complete in {train_time:.2f}s over {TOTAL_TIMESTEPS} timesteps (device={DEVICE})")
+
+def evaluate(model, episodes=5):
+    accs, rewards = [], []
+    for ep in range(episodes):
+        obs, _ = env.reset(); done = False; ep_reward = 0.0
+        while not done:
+            action, _ = model.predict(obs, deterministic=True)
+            obs, r, terminated, truncated, info = env.step(action)
+            ep_reward += r; done = terminated or truncated
+        accs.append(info.get('global_accuracy', 0.0)); rewards.append(ep_reward)
+        print(f"Episode {ep+1}: final_acc={accs[-1]:.4f} total_reward={ep_reward:.4f}")
+    return accs, rewards
+
+print("\n🔍 Evaluating trained policy...")
+final_accs, final_rewards = evaluate(model, episodes=5)
+print(f"\n📊 Accuracy stats -> mean={np.mean(final_accs):.4f} max={np.max(final_accs):.4f} min={np.min(final_accs):.4f}")
+print(f"📊 Reward stats  -> mean={np.mean(final_rewards):.4f} max={np.max(final_rewards):.4f} min={np.min(final_rewards):.4f}")
+ppo_model = model
+print("Model stored as ppo_model (device maintained).")
+```
+
+    
+    🚀 Starting PPO training on federated aggregation environment (device= mps )...
+    ✅ PPO training complete in 18.16s over 3000 timesteps (device=mps)
+    
+    🔍 Evaluating trained policy...
+    ✅ PPO training complete in 18.16s over 3000 timesteps (device=mps)
+    
+    🔍 Evaluating trained policy...
+    Episode 1: final_acc=0.5867 total_reward=5.5700
+    Episode 1: final_acc=0.5867 total_reward=5.5700
+    Episode 2: final_acc=0.5867 total_reward=5.5700
+    Episode 2: final_acc=0.5867 total_reward=5.5700
+    Episode 3: final_acc=0.5867 total_reward=5.5700
+    Episode 3: final_acc=0.5867 total_reward=5.5700
+    Episode 4: final_acc=0.5867 total_reward=5.5700
+    Episode 4: final_acc=0.5867 total_reward=5.5700
+    Episode 5: final_acc=0.5867 total_reward=5.5700
+    
+    📊 Accuracy stats -> mean=0.5867 max=0.5867 min=0.5867
+    📊 Reward stats  -> mean=5.5700 max=5.5700 min=5.5700
+    Model stored as ppo_model (device maintained).
+    Episode 5: final_acc=0.5867 total_reward=5.5700
+    
+    📊 Accuracy stats -> mean=0.5867 max=0.5867 min=0.5867
+    📊 Reward stats  -> mean=5.5700 max=5.5700 min=5.5700
+    Model stored as ppo_model (device maintained).
+

@@ -1,0 +1,17 @@
+jupyterlab
+numpy
+scipy
+pandas
+matplotlib
+seaborn
+scikit-learn
+tqdm
+torch
+torchvision
+torchaudio
+torch_geometric
+pyfhel
+notebook
+pytest
+black
+flake8

@@ -1,29 +1,98 @@
-# Byte-compiled / cache
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*.class
+*$py.class
 
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb~
+# C extensions
+*.so
 
-# Environments
-.venv/
+# Distribution / packaging
+.Python
+env/
+venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.tox/
+*.tox/
+*.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+**/.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
+
+# dotenv
 .env
+.venv
+env.bak/
 
-# Data & weights
-data/
-weights/
-*.npy
-*.pickle
-*.h5
-*.keras
+# VS Code
+.vscode/
 
-# OS
+# macOS
 .DS_Store
 
+# Data and model artifacts
+/data/
+/results/
+/weights/
+*.h5
+*.hdf5
+*.ckpt
+*.pth
+*.pt
+*.npy
+*.npz
+
+# archives
+*.zip
+*.tar.gz
+
 # Logs
+logs/
 *.log
 
-# Docker
-*.tar
+# Local repo HE artifacts
+repo_HE_FL/agg_model.hdf5
+repo_HE_FL/main_model.hdf5
+repo_HE_FL/client_*.weights.h5
