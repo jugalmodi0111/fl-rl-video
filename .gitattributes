@@ -1,13 +1,5 @@
-# Treat notebooks as JSON to avoid CRLF normalization issues
-*.ipynb text merge=union
+# Treat notebooks as text for simple merges where possible
+*.ipynb merge=union
 
-# Images are binary
-*.png binary
-*.jpg binary
-*.jpeg binary
-*.gif binary
-
-# Large data and model artifacts (do not export)
-data/* export-ignore
-weights/* export-ignore
-repo_HE_FL/*.h5 export-ignore
+# Ensure consistent line endings
+* text=auto eol=lf

@@ -1,29 +1,21 @@
-# Contributing
+# Contributing to RL + Federated Learning Ensemble
 
-Thanks for your interest in contributing! Please follow the guidelines below to make collaboration smooth.
+Thanks for your interest in contributing! This project accepts contributions by issue reports, bug fixes, experiments, and documentation improvements.
 
-How to Contribute
--
-1. Fork the repository and create a feature branch: `git checkout -b feature/your-feature`.
-2. Keep changes small and focused; open a PR against `master` with a clear description.
-3. Run tests locally before opening a PR.
+How to contribute
+- Open an issue describing the problem, feature request, or idea.
+- Fork the repository and create a feature branch for your change.
+- Keep changes focused and small; prefer multiple PRs over a single large one.
+- Add or update documentation and notebook cells where relevant.
+- Write tests where applicable and ensure local checks pass.
 
-Code Style
--
-- Follow PEP8 for Python code. Use `black` for formatting and `flake8` for linting.
-- Notebook changes should be minimal and contain explanatory markdown cells.
+Coding style
+- Use readable variable names and avoid one-letter names.
+- Keep functions short and focused.
+- Format Python code with `black` (optional) and lint with `flake8`.
 
-Testing
--
-- Add unit tests under a `tests/` directory where applicable.
-- Use `pytest` to run tests: `pytest -q`.
+Pull requests
+- Use descriptive PR titles and link to related issues.
+- Provide a short summary of changes and why they are needed.
 
-Pull Request Process
--
-1. Open a pull request with a descriptive title and summary.
-2. Include any relevant reproduction steps or notebooks.
-3. Maintain backward compatibility where possible.
-
-Contact
--
-If you have questions about the repository or design decisions, open an issue or contact the maintainers.
+Maintainers will review and request changes if necessary.

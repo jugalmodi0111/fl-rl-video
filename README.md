@@ -1,35 +1,26 @@
+#!/usr/bin/env bash
 
-# Homomorphic Encryption + Federated Learning (HE + FL)
+# RL + Federated Learning Ensemble (rl-fl-ensemble)
 
-This repository demonstrates privacy-preserving federated learning workflows combined with homomorphic encryption (HE) to enable collaborative model training on sensitive video and image datasets without exposing raw data.
+This repository contains experimental notebooks and helper code for combining Reinforcement Learning (RL) with Federated Learning (FL) in video recognition experiments. The main working artifact is the notebook `rl-fl-ensemble (1).ipynb`.
+
+This project mixes a few research directions:
+- Federated client modeling and aggregation
+- Reinforcement-learning-driven aggregation/ensemble strategies
+- (Optional) Homomorphic encryption integration for privacy-preserving aggregation (see `repo_HE_FL/`)
+
+Key paths
+- `rl-fl-ensemble (1).ipynb` — Primary notebook driving experiments and visualizations
+- `repo_HE_FL/` — helper code, example weights, and HE-related utilities
+- `data/` — datasets (not included in repo; add locally or configure paths in the notebook)
 
 Overview
--
-- Purpose: Provide reproducible examples and reference implementations for research and engineering around HE-enabled federated learning on small-to-medium scale datasets (MedMNIST and video subsets).
-- Contents: notebooks, client/server training orchestration, example encrypted model artifacts, and helper scripts for running locally (macOS) or in Docker.
+--------
+The notebook is designed to be runnable end-to-end in a reproducible environment. It contains cells to prepare data splits, construct client datasets, define local models (MLP / CNN / GNN), perform local training, and implement aggregation strategies including an RL-based ensemble.
 
-Highlights
--
-- Federated learning agent implementations (RL-based agents and classical ML baselines).
-- Integration with Pyfhel for homomorphic encryption demonstrations (macOS shim + Docker-ready real HE flow).
-- Example Graph Neural Network (GNN) client modeling for relationship-aware aggregation.
-
-Repository Structure
--
-- `repo_HE_FL/` — Core federated-learning implementation, models, and helper scripts.
-- `data/` — Example datasets (do not commit large datasets; use local or cloud storage in production).
-- `weights/` — Example model weights (ignored by `.gitignore`).
-- `*.ipynb` — Analysis and runnable notebooks demonstrating experiments.
-
-Quick Start
--
-Prerequisites
--
-- Python 3.9+ (3.10 recommended)
-- `pip` or `conda`
-- (Optional) GPU and corresponding CUDA toolkit for accelerated PyTorch training.
-
-Install (recommended: virtual environment)
+Quickstart
+----------
+1. Create and activate a Python virtual environment (recommended):
 
 ```bash
 python -m venv .venv
@@ -37,37 +28,38 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Run Notebooks
--
-- Launch Jupyter Lab / Notebook and open the example notebooks:
+2. Launch Jupyter Lab/Notebook and open `rl-fl-ensemble (1).ipynb`:
 
 ```bash
 jupyter lab
+# or
+jupyter notebook
 ```
 
-- The primary notebooks are:
-	- `rl-fl-ensemble (1).ipynb` — RL + Federated learning ensemble experiments
-	- `Encrypted FL Main-Rel.ipynb` — Main pipeline mixing HE and FL
+3. Run cells sequentially. The notebook includes a helper cell that attempts to auto-install `torch_geometric` if it is missing.
 
-Development
--
-- Use the included `.github/workflows/python-app.yml` to run lightweight CI (lint/test) on GitHub Actions.
+Notes on GPU/CPU
+-----------------
+- For GPU support install matching `torch` wheels from https://pytorch.org. The included `requirements.txt` is CPU-friendly; change to CUDA-specific wheels for GPU experiments.
 
-Best Practices and Notes
--
-- Do NOT store private datasets or large model artifacts in the repo. Use `.gitignore` (provided) and external storage for datasets and trained weights.
-- If you need to share artifacts for review, provide small reproducible subsets or scripts to fetch data from a private bucket.
+Data and Large Files
+--------------------
+This repository does not include large datasets or some model weight files. Add your local datasets to `data/` or configure the paths in the notebook. Example weights may be present in `repo_HE_FL/weights/` but large binaries are intentionally not tracked.
 
 Contributing
--
-See `CONTRIBUTING.md` for contribution guidelines, code style, and how to run tests locally.
+------------
+See `CONTRIBUTING.md` for contribution guidelines and `CODE_OF_CONDUCT.md` for community standards.
+
+CI
+--
+A GitHub Actions workflow is provided in `.github/workflows/python-app.yml` to run basic linting and tests (if present).
 
 License
--
-This project includes a `LICENSE` file at the repository root. Ensure compatibility before reuse.
+-------
+This repository includes a `LICENSE` file. Review and replace if you prefer a different license.
 
-Acknowledgements
--
-- Research and demo code adapted from internal experiments and open-source references in federated learning, PyTorch, and Pyfhel.
+Contact
+-------
+Open an issue or PR on the repository once pushed to GitHub for questions or collaboration.
 
 
