@@ -1,0 +1,36 @@
+==========================================================================================
+FEDERATED LEARNING EXPERIMENT SUMMARY
+==========================================================================================
+
+Timestamp: 20251129_231200
+Number of Clients: 5
+Test Set Size: 60
+Feature Dimension: 693
+
+CLIENT STATISTICS:
+------------------------------------------------------------------------------------------
+Client 1:
+  Samples: 25
+  Classes: 8
+  Accuracy: 0.1000
+
+Client 2:
+  Samples: 34
+  Classes: 10
+  Accuracy: 0.1000
+
+Client 3:
+  Samples: 19
+  Classes: 9
+  Accuracy: 0.1000
+
+Client 4:
+  Samples: 21
+  Classes: 9
+  Accuracy: 0.1000
+
+Client 5:
+  Samples: 41
+  Classes: 10
+  Accuracy: 0.1000
+
