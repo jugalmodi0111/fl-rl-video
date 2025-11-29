@@ -1,46 +1,20 @@
-.DS_Store
-*.pyc
+# Generated models and outputs
+*.onnx
+fl_outputs*/
+fl_outputs_*/
+fl_outputs_*
+*_metrics.csv
+*.png
+*.csv
+*.bak
 __pycache__/
-.ipynb_checkpoints/
-.venv/
-.env
-.vscode/
-
-# Data and models (large files)
-data/
-**/data/
-repo_HE_FL/weights/
-weights/
-*.h5
 *.hdf5
-*.pt
-*.pth
+weights/
 *.npy
-*.npz
-*.zip
-results/
+# Notebook backups
+*.ipynb.bak
+# Python env
+.env
+venv/
+ENV/
 
-# Notebook checkpoints and outputs
-.ipynb_checkpoints/
-
-# OS files
-Thumbs.db
-
-# Python packaging
-dist/
-build/
-
-# Jupyter Lab workspace
-.jupyter/
-
-# Logs
-*.log
-
-# macOS
-.DS_Store
-
-# Temporary files
-*.tmp
-
-# keep code and documentation tracked
-!README.md
