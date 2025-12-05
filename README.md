@@ -85,11 +85,11 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  S[State s_t] --> A[Agent selects action a_t]
-  A --> E[Environment executes action]
-  E --> R[Reward r_t+1 & next state s_{t+1}]
-  R --> U[Agent updates policy/value]
-  U --> S
+    S[State (s_t)] --> A[Agent selects action (a_t)]
+    A --> E[Environment executes action]
+    E --> R[Reward r(t+1) and next state s(t+1)]
+    R --> U[Agent updates policy or value function]
+    U --> S[Next state (s_t)]
 ```
 
 ### 4) Ensemble Architecture (High-Level)
