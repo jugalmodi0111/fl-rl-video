@@ -120,45 +120,25 @@ pie title Computation Time Distribution (Conceptual)
 ### Example: Bar Chart — Model Performance Across Clients (Conceptual)
 
 ```mermaid
-{
-  "type": "bar",
-  "data": {
-    "labels": ["Client A", "Client B", "Client C", "Global Ensemble"],
-    "datasets": [{
-      "label": "Reward",
-      "data": [120, 90, 105, 135],
-      "backgroundColor": ["#4CAF50", "#2196F3", "#FF9800", "#F44336"]
-    }]
-  },
-  "options": {
-    "scales": {
-      "y": { "beginAtZero": true }
-    }
-  }
-}
+bar
+	title Model Performance Across Clients
+	x-axis Clients
+	y-axis Reward
+	datasets
+		"Reward" [120, 90, 105, 135]
+	labels ["Client A", "Client B", "Client C", "Global Ensemble"]
+
+line
+    title Training Curve — Average Reward Over Rounds
+    x-axis Training Rounds
+    y-axis Average Reward
+    datasets
+        "Average Reward" [50, 70, 80, 95, 110, 120, 125, 130, 133, 135]
+    labels [1,2,3,4,5,6,7,8,9,10]
+
 ```
 
-### Example: Line Chart — Training Curve (Conceptual)
 
-```mermaid
-{
-  "type": "line",
-  "data": {
-    "labels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    "datasets": [{
-      "label": "Average Reward",
-      "data": [50, 70, 80, 95, 110, 120, 125, 130, 133, 135],
-      "borderColor": "#2196F3",
-      "fill": false
-    }]
-  },
-  "options": {
-    "scales": {
-      "y": { "beginAtZero": true }
-    }
-  }
-}
-```
 
 ## Step-by-Step Conceptual Recipes (with Runnable Toy Examples)
 
