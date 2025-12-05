@@ -61,13 +61,13 @@ jupyter notebook "rl-fl-ensemble (1).ipynb"
 
 ```mermaid
 flowchart LR
-  A[Multiple Clients / Devices] --> B[Local Data & Environments]
-  B --> C[Local Training (RL or local model update)]
-  C --> D[Client sends update (weights/gradients) to Server]
-  D --> E[Server Aggregation (e.g., FedAvg)]
-  E --> F[Global Model Broadcast to Clients]
-  F --> G[Optional: Ensemble Construction / Meta-Controller]
-  G --> H[Deployment / Evaluation]
+  A[Multiple Clients / Devices] --> B[Local Data and Environments]
+  B --> C[Local Training: RL Agent or Local Model Update]
+  C --> D[Client Sends Update: Weights or Gradients]
+  D --> E[Server Aggregation: FedAvg or Custom Aggregator]
+  E --> F[Global Model Broadcast Back to Clients]
+  F --> G[Optional Module: Ensemble Builder or Meta-Controller]
+  G --> H[Deployment, Evaluation, or Further Training]
 ```
 
 ### 2) Federated Averaging (Server Perspective)
