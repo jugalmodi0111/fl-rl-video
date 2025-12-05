@@ -339,13 +339,14 @@ for each round t = 1..T:
 
 ```mermaid
 flowchart TD
-  Inputs[Observations per client] --> Score1[Policy 1: action distribution]
-  Inputs --> Score2[Policy 2: action distribution]
-  Inputs --> Score3[Policy 3: action distribution]
-  Score1 --> Combine[Aggregate (voting / score average)]
-  Score2 --> Combine
-  Score3 --> Combine
-  Combine --> FinalAction[Select final action]
+    Inputs[Observations per client] --> Score1[Policy 1: action distribution]
+    Inputs --> Score2[Policy 2: action distribution]
+    Inputs --> Score3[Policy 3: action distribution]
+    Score1 --> Combine[Aggregate Voting or Score Averaging]
+    Score2 --> Combine
+    Score3 --> Combine
+    Combine --> FinalAction[Select final action]
+
 ```
 
 ## Final Notes & Recommended Next Steps
