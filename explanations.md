@@ -25,13 +25,13 @@ The subsequent diagram delineates the RL-FL workflow (renderable via mermaid.liv
 
 ```mermaid
 graph TD
-    A[Local Devices: RL Agents Train Policies (e.g., Video Interaction Env)] --> B[Federated Update: Compute Gradients/Deltas]
-    B --> C[Aggregation: Server Applies FedAvg or Meta-Controller]
-    C --> D[Ensemble Model: Broadcast Global Policy]
-    D --> E[Evaluation: Reward Metrics, Privacy Checks]
-    E --> F[Next Iteration: Local Refinement]
+    A["Local Devices: RL Agents Train Policies (e.g., Video Interaction Env)"] --> B["Federated Update: Compute Gradients/Deltas"]
+    B --> C["Aggregation: Server Applies FedAvg or Meta-Controller"]
+    C --> D["Ensemble Model: Broadcast Global Policy"]
+    D --> E["Evaluation: Reward Metrics, Privacy Checks"]
+    E --> F["Next Iteration: Local Refinement"]
     F --> A
-    G[Video Data: User-Specific Streams] --> A
+    G["Video Data: User-Specific Streams"] --> A
     style A fill:#f9f,stroke:#333
     style E fill:#bbf,stroke:#333
 ```
