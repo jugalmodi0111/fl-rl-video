@@ -86,10 +86,10 @@ Browser navigation ensues upon URL activation.
 
 ```mermaid
 flowchart LR
-    Start([Clone Repository]) --> Isolate[Initiate Virtual Environment]
-    Isolate --> Integrate[pip install -r requirements.txt]
-    Integrate --> Invoke[jupyter notebook]
-    Invoke --> Select[Open rl-fl-ensemble (1).ipynb]
+    Start([Clone Repository]) --> Isolate["Initiate Virtual Environment"]
+    Isolate --> Integrate["pip install -r requirements.txt"]
+    Integrate --> Invoke["jupyter notebook"]
+    Invoke --> Select["Open rl-fl-ensemble (1).ipynb"]
     Select --> Execute([Run Cells Sequentially])
     style Execute fill:#90EE90,stroke:#333
 ```
